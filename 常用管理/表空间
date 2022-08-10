@@ -47,6 +47,9 @@ and p.table_name = t.table_name
 and t.tablespace_name = UPPER('&tablespace_name')
 order by 1,2,3,4,5;
 
+可以先删除约束，也可以使用级联删除：
+drop tablespace inv_data including contents and data files cascade constraints;
+这个命令可以删除在其他表中指向被删除的表空间中表的引用完整性约束。
 
 
 
