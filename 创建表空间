@@ -1,0 +1,75 @@
+创建表空间
+create tablespace tools
+  datafile '/u01/dbfile/o12c/tools01.dbf'
+  size 100m
+  extent management local
+  uniform size 128k
+  segment space management auto;
+  
+autoextend功能，不建议使用，磁盘撑满后会影响 oracle程序，导致库被挂起
+示例
+create tablespace tools
+  datafile '/u01/dbfile/o12c/tools01.dbf'
+  size 100m
+  autoextent  on maxsize 1000m
+  extent management local
+  uniform size 128k
+  segment space management auto;
+
+查询 数据库中所有表空间的定义语句：
+select dbms_metadata.get_ddl('TABLESPACE',tablespace_name) from dba_tablespace;
+
+重命名表空间
+alter tablespace tools rename to tools_dev;
+表空间system 和sysaux无法重命名。
+
+控制重做日志 
+lue
+
+更改表空间的写入模式
+alter tablespace inv_mgmt_rep read only;
+alter tablespace inv_mgmt_rep read write;
+11g及以上版本，可修改表级别的
+alter table my_tab read only;
+alter table my_tab read write;
+
+删除表空间
+alter tablespace inv_data offline;  脱机 看是否有人使用。
+drop tablespace inv_data including contents and datafiles;
+
+如果有外键约束，就 删除不了。
+可运行下面的查询命令，查看是否有外键约束：
+select p.owner,p.table_name,p.constraint_name,f.table_name referencing_table,f.constraint_name foreign_key_name,f.status fk_status
+from dba_constraints p,dba_constraints f,dba_tables t
+where p.constraint_name=f.r_constraint_name
+and f.conftraint_type = 'R'
+and p.table_name = t.table_name
+and t.tablespace_name = UPPER('&tablespace_name')
+order by 1,2,3,4,5;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
