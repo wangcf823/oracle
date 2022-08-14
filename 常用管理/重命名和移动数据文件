@@ -1,0 +1,85 @@
+12c中新增了一条命令
+alter database move datafile 执行此命令，数据库必须处于联机状态
+重命名联机数据文件：
+alter database  move datafile  '/u01/dafile/o12c/user01.dbf' to '/u01/dafile/o12c/users_dev01.dbf';
+移动数据文件：
+alter database move datafile '/u01/dafile/o12c/system01.dbf' to '/u02/dbfile/o12c/systtem01.dbf';
+在重命名和移动数据文件时还可以使用数据文件的编号；例如：
+alter database move datafile 2  to '/u02/dbfile/o12c/sysuax01.dbf';
+如果想要移动数据文件并保留其原始文件，可使用keep选项：
+alter database move datafile 4 '/u02/dbfile/o12c/user01.dbf' keep;
+使用reuse子句可以覆盖现存的文件：
+alter database move datafile 4 ro '/u01/dbfile/o12c/user01.dbf' reuse;
+
+11g或之前执行重命名和移动数据文件前，必须使数据文件脱机。可使用两种方法移动和重命名脱机数据文件：
+组合使用sql命名和os命名；
+组合使用重新创建控制文件和os命令。
+
+使用sql和os命令
+(1)使用下面的查询命令可以确定现存数据文件的名称：
+select name from v$datafile;
+(2)通过alter tablespace 或alter database datafile 命令，使数据文件脱机。可以先关闭数据库然后重启 数据库使之进入mount模式；在该模式中可以移动数据文件，因为他们没有打开。
+(3）可以使用os命令（如mv或cp）,也可以使用pl/sql软件包内置的dbms_file_transfer中的copy_file过程，将数据文件移动到新的物理位置
+(4)使用alter tablespace ... rename dataffile ...to 语句或alter database rename file ... to 语句，通过新的数据文件名称更新控制文件。
+(5)使数据文件联机。
+
+下面做演示：
+alter tablespace users offline;
+mv /u01/dafile/o12c/user01.dbf'  '/u02/dafile/o12c/users01.dbf
+然后使用alter tablespace 命令更新控制文件：
+alter tablespace users rename datafile '/u01/dbfile/o12c/users01.dbf' to '/u02/dbfile/o12c/users01.dbf';
+最后重新联机
+alter tablespace users online;
+
+如果要移动system和undo表空间必须先关闭数据库然后进入mount模式：
+conn  / as sysdba
+shutdown immediate;
+startup mount;
+然后os命令移动文件：
+mv /u01/... to /u02/...
+mv ....
+mv .....
+使用新的文件名：
+alter database rename file 
+'/u01/...'
+'/u01/...'
+'/u01/...'
+to 
+'/u02/...'
+'/u02/...'
+'/u02/...'
+然后打开数据库：
+alter database open;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
