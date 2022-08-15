@@ -1,0 +1,149 @@
+控制文件存储了以下几种信息：
+数据库的 名称；
+数据文件的名称和位置
+联机重做日志文件的名称和位置；
+当前联机重做日志的序列号
+检查点信息；
+rman备份文件（正在使用的）的名称和位置。
+
+通过数据字典视图可以查询控制文件中存储的许多信息，例如：
+select distinct type from v$controlfile_record_section   显示了控制文件中存储信息的类型
+
+v$database视图可以查看存储在控制文件中的、与数据库有关的信息：
+select name,open_mode,created,current_scn from v$database;
+
+将数据库启动到nomount模式时，实例会通过spfile或init.ora文件中的初始化参数control_files定位控制文件。执行了startup nomount 命令后，oracle就会读取参数文件，启动后台进程并分配内存：
+startup nomount;
+此刻控制文件还没有接触任何进程。当将数据库启动到monut模式后，控制文件才会读取并打开：
+alter database mount;
+control_files初始化参数中列出的控制文件不可用，那么就无法将数据库启动到mount模式；
+成功将数据库启动到mount模式后，实例就获得了数据文件和联机重做日志文件的位置信息，但是还没有打开他们。将数据库启动到open模式后，数据文件和联机重做日志文件就会被打开：
+alter database open;
+
+如果数据库处于nomount,mounted或open状态，就可以查看控制文件的名称和位置：
+show parameter control_files
+
+
+增加控制文件
+步骤：
+1、修改初始化文件中的control_files参数，使之包含新增控制文件的名称和位置。
+2、关闭数据库。
+3、使用os命令将现存的控制文件复制到新位置并重命名。
+4、启动数据库。
+上述步骤会随不同的初始化文件（spfile或init.ora）而略有不同。
+spfile情况；
+show parameter spfile查看情况
+1、确定control_files参数的当前值：
+show parameter control_files
+2、修改control_files参数的当前值：
+alter system set control_file='u01/dbfile/o12c/control01.ctl','/u01/dbfile/o12c/control02.ctl' scope=spfile;
+3、关闭数据库：
+shutdown immediate;
+4、将现存的控制文件复制到新位置并重命名
+cp /u01/dbfile/o12c/control01.ctl  /u01/dbfile/o12c/control02.ctl
+5、启动数据库：
+startup
+验证控制文件
+show parameter control_files
+
+使用init.ora情况：
+使用show parameter spfile 验证spfile为空
+1、关闭数据库
+shutdown immediate;
+2、os程序编辑init.ora文件：
+vi $oracle_home/dbs/inito12c.ora
+control_files='/u01/dbfile/o12c/control01.ctl','/u01/dbfile/o12c/control02.ctl'
+3、复制控制文件
+cp /u01/dbfile/o12c/control01.ctl /u01/dbfile/o12c/control02.ctl
+4、启动数据库：
+startup
+验证控制文件
+show parameter control_files
+
+移动控制文件
+类似于上面的新增控制文件
+
+删除控制文件
+1、通过检查alter.log,查明存储控制文件的设备是否发生故障
+类似于上面的步骤
+init.ora直接修改文件内容
+spfile
+执行alter system set control_files='/u01/dbfile/o12c/control01.ctl' scope=spfile;
+执行重启数据库
+shutdown immediate
+startup
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
