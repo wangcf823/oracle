@@ -1,0 +1,113 @@
+联机重做日志存储了数据库中已出现的事务的记录。这些日志有以下作用：
+1、为数据库提供记录更改的机制，这样当发生介质失效事件时，就有办法恢复事务。
+2、确保出现整个实例失败的事件时，即使已提交的数据更改还没有写入数据文件，也能够恢复已提交的事务（崩溃恢复）。
+3、使管理员能够 通过oracle的logminer实用程序 ，检查数据库事务的历史记录。
+4、可以使用oracle工具（如goldenGate）读取联机重做日志，可以使用oracle工具（如streams）复制联机重做日志。
+
+
+日志写进程是一种后台进程，它负责将重做日志缓冲区（SGA中的）的事务信息，写入联机重做日志文件（在磁盘上）。当出现下列情况时，日志写进程会刷新重做日志缓冲区。
+执行了commit命令
+出现日志切换
+过了3秒
+重做日志缓冲区被占用了1/3
+重做日志缓冲区的已用空间达到1MB
+
+因为联机重做日志组的数量是有限的，所以所有联机重做日志组的内容都会被覆盖。如果想要保存事务的历史记录，就必须使数据库处于归档日志模式。
+
+联机重做日志文件不是专门用于备份的文件。这些文件仅含有数据库最近的重做事务信息。启用了归档功能后，归档重做日志文件就成为了保存数据库事务历史记录的机制。
+发生日志切换前，当前的联机重做日志文件的内容不会归档。这意味着如果丢失了所有当前联机重做日志文件，就会丢失事务。使用下列机制可以将联机重做日志文件的故障的可能性将至最低。
+使用多路复用的联机重做日志组。
+在情况允许时，不要使同一联机重做日志组中的两个成员共用同一个控制器。
+在情况允许时，不要将同一联机重做日志组中的两个成员存储在同一块磁盘中。
+确保设置适当的os文件权限
+使用冗余物理存储设备（如RAID（磁盘阵列））
+为日志文件设置适当的尺寸，使他们能够以正常的时间间隔进行切换和归档。
+设置archive_lag_target初始化参数，确保联机重做日志能够以正常的时间间隔切换。
+
+显示联机重做日志信息 
+v$log和v$logfile视图可以显示联机重做日志组及其成员的相关信息：
+select a.group#,a.thread#,a.status grp_status,b.member member,b.status mem_status,a.bytes/1024/1024 mbytes from v$log a,v$logfile b 
+where a.group#=b.group#  order by a.group#,b.member;
+
+确定联机重做日志组的最优尺寸
+应适当调整联机重做日志的尺寸，使他们每小时进行6次切换。v$log_history视图含有联机重做日志切换频率的历史记录。执行下面的查询命令，可以查看日志每小时的切换频率：
+select count(*) ,to_char(first_time,'YYYY:MM:DD:HH24') from v$log_history group by to_char(first_time,'YYYY:MM:DD:HH24') order by 2;
+
+使用archive_lag_target初始化参数 ，可以设置日志切换的最大时间间隔（以秒为单位）。该参数通常设置为1800秒（30分钟）。使用 0会禁用该功能。
+
+查询 v$instance_recovery视图的optimal_logfile_size列，确认 是否正确的设置了联机重做日志文件的尺寸：
+select optimal_logfile_size from v$instance_recovery;
+这一列显示了以初始化参数fast_start_mttr_target的设置为依据的联机重做日志文件最优尺寸（单位MB）。oracle 建议将所有联机重做日志文件的尺寸，都设置的不低于optimal_logfile_size列的值。
+然而，在调整联机重做日志尺寸时，你必须以自己的环境为参考条件（如切换频率）。
+
+日志写进程覆盖联机重做日志中的信息前，SGA中所有与联机重做日志有关的已修改块，都必须先写入数据文件。如果所有已修改块没有全部写入数据文件，alert.log文件中就会出现下面的信息：
+checkpoint not complete
+
+增加联机重做日志组
+alter database add logfile group 3 ('/u01/oraredo/o12c/redo03a.rdo','/u02/oraredo/o12c/redo03b.rdo') size 50m;
+
+调整联机重做日志组的大小
+要调整联机重做日志的尺寸，必须先增加你想要尺寸的联机重做日志组，然后删除旧的联机重做日志
+alter database add logfile group 4 ('/u01/oraredo/o12c/redo04a.rdo','/u02/oraredo/o12c/redo04b.rdo') size 200m;
+
+在删除日志组前，必须使之处于active状态。可以使用下面的命令检查日志组的状态：
+select group#,status,archived,thread#，sequence# from v$log;
+删除不活动的日志组：
+alter database drop logfile group <组号>;
+使用alter system switch logfile 语句可以切换日志，使下一日志组成为当前日志组：
+alter system switch logfile;
+使用alter system checkpoint可以使日志组变为不活动：
+alter system checkpoint;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
