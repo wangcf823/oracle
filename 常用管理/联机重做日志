@@ -60,6 +60,19 @@ alter system switch logfile;
 alter system checkpoint;
 
 
+向日志组增加联机重做日志文件
+alter database add logfile member '/u02/oraredo/o12c/redo01b.rdo' to  group 1;
+从日志组删除联机重做日志文件
+应确保要删除的文件不在当前日志组中：
+select a.group#,a.member,b.archived,sum(b.bytes)/1024/1024 mbytes from v$logfile a ,v$log b 
+where a.group#=b.group# group by a.group#,a.member,b.status,b.archived order by 1,2;
+如果删除current状态日志组中的日志文件，系统会显示下列错误：
+ora-01623
+需要切换
+alter system swith logfile;
+删除：
+alter database drop logfile member '/u01/oraredo/o12c/redo04a.rdo';
+
 
 
 
