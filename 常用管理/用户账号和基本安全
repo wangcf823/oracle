@@ -21,3 +21,94 @@ alter user mv_maint identified by values '上面语句查询的结果'
 6、将原来的配置文件重新分配给用户；
 alter user mv_maint profile default;
 
+select distinct u.username ,case when dd.user_name is null then 'DBA created account' else 'oracle created account'
+end 
+from dba_users u ,default_pwd$ d where u.username=d.user_name(+);
+select distinct(user_name) from default_pwd$ where user_name in (select username from dba_users);
+上面的查询语句也不一定100%正确，DBA可以将用户账号手动添加到default_pwd$视图中。
+
+创建用户账号
+需要考虑下列因素：
+用户名和验证方式；
+基本权限；
+默认的永久表空间和空间配额
+默认的临时表空间；
+
+选择用户名和验证方式
+验证是指确认用户账号已获得授权的机制。
+数据库验证（将用户名和密码存储在数据库中）
+os验证
+网络验证；
+全局用户验证和授权；
+外部服务验证
+
+1、创建数据库验证用户
+create user heera identified by chaya
+default tablespace users
+temporary tablespace temp 
+quota unlimited on users;
+这会创建一个没有任何权限的用户账号。使用户可用，赋权：
+grant create session to heera;
+grant createt table to heera;
+还可以使用grant...identified by 语句创建用户，例如：
+grant create table,create session to heera identified by chaya;
+
+创建os验证用户账号
+os验证采用的机制是，只要用户能够登陆数据库服务器的os,就赋予用户数据库权限。os验证方式有两种：
+将特定的os角色分配给用户（支持将数据库权限与os账号对应）；
+通过identified by externally 子句验证普通的数据库用户。
+
+登录数据库服务器的os后，使用identified externally子句创建的用户账号，能够在不提供用户名和密码的情况下连接数据库。：
+访问数据库服务器的用户无需保留数据库的用户名和密码。
+由os验证用户执行的登录数据库的脚本无需使用硬编码的密码。
+其他数据库用户无法通过猜测用户名和密码，非法使用其他 用户账号。使用os验证用户账号的唯一方式就是登录os.
+
+oracle会为设置os用户连接数据库的初始化参数os_authent_prefix的值添加前缀。该参数的默认值为OPS$。oracle公司强烈建议将os_authent_prefix参数设置为空字符串；例如：
+alter system set os_authent_prefix='' scope=spfile;
+要使这个修改生效，必须重启数据库。
+示例：
+create user jsmith identified externally;
+grant create session to jsmith;
+当jsmith登录了数据库服务器的os后，该用户就可以连接sql*plus:
+sqlplus  /
+无需提供用户名和密码，因为该用户已经通过了os验证。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
