@@ -1,0 +1,23 @@
+在创建数据库时，默认情况下几个默认的用户账号会随之创建。
+锁定账号和密码过期
+下面 语句可以锁定所有账号 且使密码过期
+select 'alter  user' || username || ' password expire account lock;' from dba_users;
+解锁
+alter user outln account unlock;
+oracle中没有alter user <user_name> password unexpire 命令。要使过期的密码重新生效，需要更改他：
+alter user <用户名> identified by <新密码>；
+
+不更改密码使其重新生效：
+1、使用DBA数据库特权用户查看该用户当前的配置文件：
+select username,profile from dba_users where username='MV_MAINT';
+2、创建一个临时配置文件：
+create prifile temp_prof limit password_reuse_max unlimited password_reuse_time unlimited;
+3、将这个临时配置文件分配给该用户：
+alter user mv_maint profile temp_prof;
+4、查看引起混乱的额密码：
+select password from user$ where name='mv_maint';
+5、使用原密码设置该账号的新密码，这可以使已过期的密码重新生效：
+alter user mv_maint identified by values '上面语句查询的结果'
+6、将原来的配置文件重新分配给用户；
+alter user mv_maint profile default;
+
