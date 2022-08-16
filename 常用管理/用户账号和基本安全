@@ -73,6 +73,203 @@ grant create session to jsmith;
 sqlplus  /
 无需提供用户名和密码，因为该用户已经通过了os验证。
 
+分配默认的永久和临时表空间
+查看用户信息
+select username,password,default_tablespace,temporary_tablespace from dba_users;
+除了sys之外的所有用户都不应该将system表空间用作默认的永久表空间。
+应该为所有用户分配临时表空间。通常，该表空间会被命名为temp
+如果发现用户错误的设置了默认表空间，可以使用alter user命名修改：
+alter user inv_mgmt default tablespace users temporary tablespace temp;
+检查用户是否将system表空间用作临时表空间，可运行下面的脚本：
+select username from dba_users where temporary_tablespace='system';
+
+创建用户脚本creuser.sql示例：
+define cre_user=inv_mgmt
+define cre_user_pwd=inv_mgmt_pwd
+define def_tbsp=inv_data
+define idx_tbsp=inv_index
+define def_tetmp_tbsp=temp
+define smk_ttbl=zzzzz
+
+create user &&cre_user identified by &&cre_user__pwd
+defult tablespace &&def_tbsp
+temporary tablespace &&def_temp_tbsp;
+
+grant create session to &&cre_user;
+grant create table to &&cre_user;
+
+alter user &&cre_user quota unlimited on &&def_tbsp;
+alter user &&cre_user quota unlimited on &&idx_tbsp;
+
+smoke test
+conn &&cre_user/&&cre_user_pwd
+create table &&smk_ttbl(test_id number) tablespace &&def_tbsp;
+create index &&smk_ttbl._idx1 on &&smk_ttbl(test_id) tablespace &&idx_tbsp;
+insert into &&smk_ttbl values(1)；
+drop table &&smk_ttbl;
+
+修改密码
+alter user heera identified by foobar;
+
+使用其他用户账号登录
+在不知道其他用户密码的情况下使用这些用户登录数据库，必须使用拥有DBA权限的用户账号。
+1、dba账号可以临时存储用户的模糊密码
+2、更改用户的密码
+3、通过新密码使用户连接数据库，并运行ddl语句。
+4、使用DBA账号连接数据库，将该用户的密码改回原来的密码。
+
+示例，临时更改用户密码然后将其改回原来密码的方法。
+select 'alter user appusr identified by values ' || '''' || password || '''' || ';' from user$ where name='appusr';
+
+alter usere appusr identified by values 'dasdfsdfwe32324';
+然后更改该用户的密码（本例使用foo）：
+alter user appusr identified by foo;
+使用appusr用户连接数据库：
+conn appusr/foo
+使用appusr用户完成任务后，将它的密码改回原来的值：
+alter user appusr identified by values '32sdsulj498dhl23jl';
+
+假如在改回原密码时，遇到了不允许更改的情况，可以临时更改用户的配置文件，使该密码继续有效。应先检查用户当前使用哪个配置文件：
+select username,profile from dba_users where username=upper('&&username');
+然后创建允许无限重用密码的专用配置文件：
+crate profile temp_prof limit 
+password_reuse_max unlimited
+password_reuse_time unlimited;
+为用户分配无重用限制的配置文件：
+alter user appusr profile temp_prof;
+这样就可以像之前那样修改密码了：
+alter user appusr identified by values '32sdsulj498dhl23jl';
+
+应确保恢复用户原来的配置文件：
+alter user appusr profile secure;
+最后，删除临时配置文件，避免将来不小心使用它：
+drop profile temp_prof;
+
+修改用户
+由于下列原因，有时需要修改现有用户：
+更改用户密码；
+锁定或解锁用户账号；
+更改默认的永久表空间和临时表空间；
+更改配置文件或角色；
+更改系统或对象权限；
+修改表空间的限额。
+修改密码
+alter user inv_mgmt identified by i2jy22a;
+如果在创建用户时没有设置默认的永久表空间和临时表空间，可以在创建用户后进行修改：
+alter user inv_mgmt default tablespace users temporary tablespace temp;
+锁定用户
+alter user inv_mgmt account lock;
+更改用户在users表空间中的限额：
+alter user inv_mgmt quota 500m on users;
+
+删除用户
+删除用户前先锁定用户
+alter user heera account lock;
+查看数据库中的锁定用户和锁定日期，可执行下面的查询命令；
+select username,lock_date from dba_users;
+解锁用户账号，可执行下面的命令：
+alter user heera account unlock;
+删除用户：
+drop user heera;
+如果用户拥有数据库对象，那么上面的语句就无法生效，使用cascade子句可以删除用户及其对象：
+drop user heera cascade;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
