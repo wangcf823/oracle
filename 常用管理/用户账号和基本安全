@@ -174,6 +174,94 @@ drop user heera;
 如果用户拥有数据库对象，那么上面的语句就无法生效，使用cascade子句可以删除用户及其对象：
 drop user heera cascade;
 
+限制数据库资源的使用
+alter system set resource_limit==true scope=both;
+在将初始化参数resource_limit设置为true前，内核资源配置文件限制不会起作用
+要查看resource_limit参数的当前设置，可执行下面的查询命令：
+select name,value from v$parameter where name='resource_limit';
+修改配置文件:
+alter profile default limit cpu_per_session 240000;
+
+管理权限
+分配数据库系统权限
+查询DBA_SYS_PRIVS视图可以查看系统权限：
+select distinct privilege from dba_sys_privs;
+要拥有赋予权限的能力，必须拥有grant any privilege权限，或通过with admin option子句获得系统权限。
+使用grant语句可以为用户赋予系统权限。
+grant create session to inv_mgmt;
+
+grant create table ,create database link to inv_mgmt;
+
+如果要收回权限，可以 使用revoke命令：
+revoke create table from inv_mgmt;
+oracle 允许DBA将系统权限赋予用户，还允许用户拥有管理权限的能力。使用with admin option子句可以做到这一点：
+grant create table to inv_mgmt with admin option;不推荐使用with  admin option
+还可以将系统权限赋予public用户组（不推荐这样做）。例如，可以将create session权限赋予所有需要连接数据库的用户；
+grant create  session to public;
+
+分配数据库对象权限
+要获得赋予对象权限的能力，必须符合下列条件之一：
+拥有对象；
+已经通过with grant option 子句获得了对象权限；
+拥有grant any object privilege系统权限。
+grant insert ,update,delete,select on registrations to inv_mgmt_app;
+grant all 命令的作用为赋予对象insert,update,delete和select 权限。下面语句的作用与上面语句的作用相同：
+grant all on  registrations to inv_mgmt_app;
+还可以将列级的insert和update权限赋予表。
+grant insert (inv_id,inv_name,inv_desc) on inventory to inv_mgmt_app;
+以级联方式将相同的对象权限赋予其他用户，可使用with grant option子句：
+grant insert on registrations to inv_mgmt_app with grant option;
+这样，用户inv_mgmt_app就可以将registrations表的插入权限赋予其他用户。
+还可以将系统权限赋予public用户组（不推荐这样做）。例如：
+grant  select on  registrations to public ;
+这样 所有用户都可以选择registrations表。
+回收权限：
+revoke insert,update,delete,select on registrations from inv_mgmt_app;
+
+以集中方式分配权限
+使用角色可以帮助你管理数据库安全，他们可以通过集中方式分配权限。可以将角色分配给多个用户，也可以分配给其他角色。
+要创建角色，可使用拥有create role 系统权限的用户连接数据库。创建角色并为它赋予你想要集中分配的系统权限或对象权限。
+示例：
+create role jr_dba;
+给角色赋予系统权限：
+grant select any table to jr_dba;
+grant create any table to jr_dba;
+grant create any view to jr_dba;
+grant create synonym to jr_dba;
+grant create database link to jr_dba;
+
+将这个角色分配给想要赋予这些权限的用户：
+grant jr_dba to lellison;
+grant jr_dba to mhurd;
+
+要查看用户获得了那些角色，可查询dba_role_privs视图；
+select grantee,granted_role from  dba_role_privs order by 1;
+
+要查看当前数据库的用户拥有 那些角色，可查询user_role_privs视图：
+select  * from user_role_privs;
+要收回角色的权限，可使用revoke命令：
+revoke jr_dba from lellison;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
