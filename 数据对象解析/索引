@@ -1,0 +1,165 @@
+可以使用函数dbms_space.create_index_cost估算索引的尺寸。
+
+create index cust_idx1 on cust(last_name);
+
+查询索引实际占用的空间：
+select bytes from user_segments where segment_name='CUST_IDX1';
+
+表和索引存储到不同的表空间中，理由：
+1、这样做可以满足不同的备份与恢复要求，你可能遇到以不同频率备份索引和表的情况。如果可以重新创建索引，也可以不备份索引。
+2、如果在使用独立表空间时使表和索引从表空间继承存储特点，就可以调整表空间中对象的存储属性。表和索引通常有不同的存储需求（如分区尺寸和日志模式）。
+3、在进行维护报告时，通过表空间分隔报告，会使管理表和索引的操作变得更容易。
+
+创建索引
+二叉树索引
+二叉树是oracle中默认的索引类型。要在现存的表上创建二叉树索引，可使用create index语句。下面的例子在表cust的last_name列上创建了一个索引：
+create index cust_idx1 on cust(last_name);
+在特定的表空间中创建索引：
+create index cust_idx1 on cust(last_name) tablespace reporting_index;
+
+使用autotrace实用程序可以验证该查询命令的访问路径；例如：
+set autotrace trace explain;
+select last_name from cust where last_name='ACER';
+
+创建组合索引
+oracle支持在多个列上创建索引。组合索引也称为多列索引。
+示例：
+select first_name,last_namee from cust where first_name='JIM' and last_name='STARK';
+create index cust_idx2 on cust(first_name,last_name);
+通过自动跟踪功能，可以验证优化器使用了组合索引：
+set autotrace trace explain;
+然后运行下列查询命令：
+select first_name,last_name from cust where first_name='JIM' and last_name='stark';
+
+实现基于函数的索引
+基于函数的索引是通过sql函数和表达式创建的。下面的例子使用sql的upper函数：
+select first_name from cust where upper(first_name)='JIM';
+在这种情况下，first_name列上可能会有标准的二叉树索引，但是在向列应用函数时oracle不会使用该列上的普通索引。
+下面的例子创建了一个基于函数的索引：
+create index cust_fnx1 on cust(upper(first_name));
+在基于函数的索引中使用自定义sql函数前，必须将该函数声明为deterministic函数。
+
+查看基于函数索引的定义：
+set long 500
+select index_name,column_expression from user_ind_expressions;
+
+创建唯一索引
+在创建二叉树索引时，还可以将索引设置为唯一索引。确保在插入或更新表中的列时，使null值拥有唯一性。
+create unique index cust_uk1 on cust(first_name,last_name);
+可以将null值插入唯一索引列的多个行中。
+
+实现位图索引
+值差异度（基数）较低的列适合使用位图索引，位图索引的结构可能会在执行DML操作时锁定多个行，这会在高事务负载的OLTP系统中导致锁定问题。
+示例：
+create bitmap index locations_bmx1 on locations(region);
+隐藏的索引具有下列作用：
+在删除索引前将其设置为隐藏模式，如果将来还需要使用该索引，就可以快速恢复他;
+可以在不影响现存代码或支持协议的情况下，向第三方应用添加隐藏索引。
+可以直接创建隐藏索引，也可以将现存索引更改为隐藏模式；例如：
+create index cust)idx2 on cust(first_name) invisible;
+alter index cust_idx1_invisible;
+切换为可见模式：
+alter index cust_idx1 visible;
+
+维护索引
+常见的索引维护任务：
+重命名索引；
+显示索引的DDL代码；
+重建索引；
+将索引设置为不可用；
+监控索引；
+删除索引；
+
+重命令索引
+alter index cust_idx1 rename to cust_index1;
+使用dbms_metadata软件包可以显示用于重建索引的DDL代码。
+set log 10000
+select dbms_metadata.get_ddl('INDEX','CUST_IDX1') FROM  dual;
+
+重建索引的作用：
+可以修改存储特性，如更改表空间；
+重建先前表级为不可用的索引，可以重新启用它。
+alter index cust_idx rebuild;
+如果没有设置表空间，oracle就会在索引原来所在的表空间中重建它。
+alter index cust_idx1 rebuild tablespace reporting_index;
+
+将索引标记为不可用
+如果你确定某个索引不再有用，可将其标记为不可用。此后oracle不会再维护这个索引，优化器也不会在select语句中使用该索引。
+下面是将索引标记为不可用的例子：
+alter index cust_idx1 unusable;
+使用下面的查询命令可以验证索引的不可用状态；
+select index_name,status from user_indexes;
+如果你确定该索引还有用（在删除他前），那么必须重建它才能使之重返可用状态：
+alter index cust_idx1 rebuild;
+
+alter index...monitoring usage 语句可以启用基本的索引监控功能。
+alter index cust_idx1 monitoring usage;
+要查明哪些索引正在被监控使用，可运行下面的查询命令：
+select * from dba_object_usage;
+
+删除索引
+drop index cust_idx1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
