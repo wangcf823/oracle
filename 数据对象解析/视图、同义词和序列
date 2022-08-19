@@ -1,0 +1,102 @@
+视图广泛用于向用户报告应用的情况，以及显示数据的子集。同义词能够以透明的方式显示和使用其他用户的对象。序列通常用于生成标识主键和外键值的唯一整数。
+视图的常用方法：
+创建能够高效重用的sql查询命令；
+在应用程序和物理表之间提供接口层；
+通过应用程序隐藏sql查询操作的复杂性；
+仅向用户显示列和行的子集。
+
+create or replace view sales_rockies as
+select sales_id,amnt,state  from sales where state in ('co','ut','wy','id','az');
+如果不想覆盖已经存在的视图，可使用create view 语句，而不要使用create or replace view语句。
+当从sales_rockies视图选择数据时，oracle会执行视图查询操作并从表sales返回相应数据：
+select * from sales_rockies;
+
+视图不太明显的功能，也可以使用delete ,update,insert语句，对基础表的数据作出修改，
+作为视图和表的所有者，你可以根据视图为其他用户赋予DML权限。但不支持用户直接通过sql访问基础表。
+
+检查更新数据
+可以设置通过视图只能修改基础表中通过视图查看的数据。使用with check option子句可以启用该功能：
+create ora replace view sales_rockies as select sales_id,amnt,state from sales where state in ('co','ut','wy','id','az') with check option;
+例如下面的update语句：
+此语句生效
+update sales_rockies set state='ID' where sales_id=1;
+此语句不生效
+update sales_rockies set state='CA' where sales_id=1;
+
+
+创建只读视图
+下面的例子使用with read only子句创建了一个视图：
+create or replace view sales_rockies as 
+select sales_id,amnt,state from sales where state in ('co','ut','wy','id','az') with read only;
+
+实现隐藏列
+
+修改视图定义
+如果要修改创建视图的sql查询代码，可以先删除该视图然后重建它，也可以使用前面介绍过的create ro replace 语法。
+create or replace 无需重新赋权。如果使用先删除后重建的方法，就必须重新为用户和角色赋予访问视图的 权限。
+
+在修改基础表后，可以通过编译视图，检查更改表是否会影响视图。
+alter vieww sales_rockies compile;
+
+显示用于创建视图的sql代码
+set long 5000
+select view_name,text from dba_views where owner=upper('&owner') and view_name like upper('&view_name');
+select text from all_views where  owner='MV_MMAINT' and view_name='sales_rockies';
+显示当前用户的视图定义，可使用user_views视图：
+select text from userr_views where view_name=upper('&view_name');
+
+重命名视图
+rename sales_rockies to sales_rockies_old;
+
+删除视图
+drop view sales_rockies_old;
+
+管理同义词
+同义词 是为对象创建替换名和 别名的机制。例如，假设user1是当前连接用户，而user1已经访问了用户user2的emp表。在没有同义词的情况下，user1必须使用下面的命令访问user2的emp表 ：
+select * from user2.emp;
+如果user1拥有create synonym 系统权限，那么user1就可以执行下面的 命令：
+create synonym emp for user2.emp;
+这样user1就可以使用下面的命令访问user2的emp表：
+select * from emp;
+可以为下列数据库对象创建同义词：
+表
+视图、对象视图
+同义词
+数据库远程对象
+pl/sql软件包、过程和函数
+物化视图
+序列
+java类方案对象
+自定义对象
+
+管理序列
+序列是用于生成唯一整数的数据库对象。通常可以使用序列为主键和外键生成整数。
+创建序列
+create sequence  inv_seq;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
