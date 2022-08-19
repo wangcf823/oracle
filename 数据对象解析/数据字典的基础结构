@@ -1,0 +1,106 @@
+静态视图
+12c之前，静态视图只有3个等级：
+user
+all
+dba
+12c开始，在使用容器/可插拔数据库功能时可以使用第四个静态视图等级：
+CDB
+user级视图含有当前用户可以获得的信息。查询user级视图无需特定的权限。
+all级视图可以显示当前用户可以访问的所有对象的信息。例如，all_tables视图可以显示所有当前用户能够对其执行任何DML操作的数据库表。查询all级视图无需特定权限。
+DBA级视图含有数据库中所有对象的元数据描述（无论这些对象属于哪些用户以及需要使用哪些权限才能访问）。要访问DBA级视图，当前用户必须拥有DBA角色或select_catalog_role权限。
+只有在使用可插拔数据库功能时才能使用CDB级视图。这类视图含有容器数据库（CBD）中所有可插拔数据库的信息。
+查询DBA_VIEWS视图的TEXT列，可以查看创建静态视图的脚本，例如：
+set long 5000
+select text from dba_views where view_name='DBA_VIEWS';
+如果手动创建数据库（不使用dbca实用程序），那么当运行catalog.sql和catproc.sql脚本时，必须使用sys用户连接数据库。sys用户是数据字典中所有对象的所有者。
+
+动态性能视图
+动态性能数据字典视图俗称V$和GV$视图。oracle会不断更新这些视图，反映当前数据库和实例的情况。对于诊断实时性能问题来说，动态视图非常重要。
+V$和GV$视图直接以X$表为基础。
+查询V$FIXED_VIEW_DEFINITION视图的VIEW_DEFINITION列，可以显示V$和GV$视图的定义。例如，下面的查询命令显示了V$CONTROLFILE视图的定义：
+select view_definition from v$fixed_view_definition where view_name='V$CONTROLFILE';
+
+数据字典的几种灵活用法
+介绍数据字典的文档。可以查询下面3个视图：
+DBA_OBJECTS
+DICITIONARY
+DICT_COLUMNS
+解决物化视图的问题，而又不记得有关数据字典视图确切的名称，可以执行下列命令：
+select object_name from dba_objects  where object_name like '%MV%' AND owner='SYS';
+dictionary视图含有数据字典视图的名称
+select table_name,comments from dictionary where table_name like '%MV%';
+通过这种方式可以快速确定需要访问的视图。如果你想要获得该视图更详细的额信息，可以对其执行描述操作，例如：
+desc dba_mviews
+select column_name,comments from dict_columns where table_name='DBA_MVIEWS';
+
+显示用户信息
+在执行DBA任务时，应谨慎地验证链接的账号和数据库。
+show user;
+select * from user_users;
+select name from v$database;
+select instance_name，host_name from v$instance；
+
+显示表的行数
+select count(*) from <table_name>;
+这个脚本含有sql*plus独有的命令，如undefine和spool。这个脚本在每次操作时都会提示输入用户名：
+undeefine user
+spool tabcount_&&user..sql
+set linesize 132 pagesize to trimspo off verify off feed off term off
+select 
+'select rpad(' || '''' || table_name || '''' || ',30)' || ',' || 'count(*) from &&user..' ||table_name || ';'
+from dba_tables where owner=upper('&&user') order by 1; 
+spo off;
+set term on 
+@@tabcount_&&user..sql
+set verify on feed on 
+这段代码生成了一个名为tabcount_<user>.sql的文件，该文件中含有用于计算指定方案中所有表的行数的sql脚本。如果向这个脚本提供用户名INVUSER，可手动运行该脚本：
+SQL>@TABCOUNT_invuser.sql
+
+显示主键和外键关系
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
