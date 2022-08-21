@@ -1,0 +1,46 @@
+数据库处于关机状态下的备份；
+冷备份非归档日志模式数据库的具体步骤：
+1、确定存储备份文件的位置和空间；
+2、找到需要复制的数据库文件；
+3、使用immediate、transactional或normal子句关闭数据库；
+4、将文件（步骤2中找到的）复制到备份位置（步骤1确定的）；
+5、重启数据库。
+
+大致估算备份文件所需的空间：
+select sum(sum_bytes)/1024/1024 m_bytes
+from (
+select sum(bytes) sum_bytes from v$datafile
+union 
+select sum(bytes) sum_bytes from v$tempfile
+union
+select (sum(bytes) * members) sum_bytes from v$log
+group by members);
+
+找到需要复制的数据库文件
+select name from v$datafile 
+union 
+select name from v$controlfile
+union 
+select name from v$tempfile
+union 
+select member from v$logfile;
+
+关闭数据库
+sqlplus / as sysdba
+shutdown immediate;
+
+复制数据文件
+cp /u01/dbfile/o12c/*.* /u01/cbackup/o12c
+
+重启数据库
+sqlplus / as sysdba
+startup;
+
+
+
+
+
+
+
+
+
